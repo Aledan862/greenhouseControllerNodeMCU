@@ -1,22 +1,25 @@
 #include <Arduino.h>
 #include <UIPEthernet.h>
-#include "PubSubClient.h"
-//#include <OneWire.h>
+#include <ESP8266WiFi.h>
+#include <PubSubClient.h>
 #include <DallasTemperature.h>
+
+#include <timeClass.cpp>
+
 #define CLIENT_ID "arduino"
 #define TOPIC_TEMP  "arduino/temp"
 #define TOPIC_OUT "arduino/relay"
 #define TOPIC_TEMP_SP "arduino/temp_sp"
-#define PUBLISH_DELAY   3000 //задержка отправки данных
+#define PUBLISH_PERIOD 30  //период отправки данных в секундах
 #define ONE_WIRE_BUS 2 //номер цифрового канала для шины 1-wire
 #define SP_TEMP_PIN A0 //номер пина для потенциометра регулирования уставки температуры
-#define SP_MAX 40     //максимальная температура уставки
-#define SP_MIN 0      //минимальная температура уставки
-#define RELAY_PIN 5    //пин на реле регулятора температуры
-#define RELAY1_PIN 6   //пины на модуль 4-х канального реле
-#define RELAY2_PIN 7
-#define RELAY3_PIN 8
-#define RELAY4_PIN 9
+#define THERM_NUM 2  //количество термометров
+#define AI_NUM 5     // количество аналогов
+#define DO_START 7  //с какого пина начинается отсчет
+#define DO_NUM 3     // дискретные выходы
+
+//systemtimeobject
+SysTime sysTime;
 
 // Setup a oneWire instance to communicate with any OneWire devices
 OneWire oneWire(ONE_WIRE_BUS);
@@ -25,10 +28,7 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
 DeviceAddress Thermometer1 = { 0x28, 0x85, 0xC7, 0x5B, 0x1E, 0x13, 0x01, 0x79 }; //28 85 C7 5B 1E 13 1 79
-float t;            //значение температуры с термометра
-long sp;           //значение уствки температуры
-long moist;
-// MAC-адрес нашего устройства
+/*// MAC-адрес нашего устройства
 byte mac[] = { 0x00, 0x2A, 0xF6, 0x12, 0x68, 0xFC };
 // ip-адрес устройства
 byte ip[] = { 192, 168, 0, 52 };
@@ -63,11 +63,11 @@ void sendData() {
 
     mqttClient.publish("arduino/Moisture", dtostrf(moist, 6, 2, msgBuffer));
     mqttClient.publish("arduino/Moisture_digital", (digitalRead(3) == HIGH) ? "Сухо" : "Влажно");
-    /*Serial.print(F("Temperature: "));
-    Serial.print(t);
-    Serial.print(F(" Уставка: "));
-    Serial.print(sp);
-    Serial.println((digitalRead(RELAY_PIN) == HIGH) ? " Остываем" : " Греем");*/
+    //Serial.print(F("Temperature: "));
+    //Serial.print(t);
+    //Serial.print(F(" Уставка: "));
+    //Serial.print(sp);
+    //Serial.println((digitalRead(RELAY_PIN) == HIGH) ? " Остываем" : " Греем");
 
   }
 }
@@ -91,6 +91,82 @@ void reconnect() {
     }
   }
 }
+*/
+//----------------------Setup Ethernet minmaxSetting----------------------------
+// Update these with values suitable for your network.
+
+const char* ssid = "DLink320";
+const char* password = "9122oleg";
+const char* mqtt_server = "185.228.232.60";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+long lastMsg = 0;
+char msg[50];
+int value = 0;
+void setup_wifi() {
+
+  delay(10);
+  // We start by connecting to a WiFi network
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  randomSeed(micros());
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  for (uint i = 0; i < length; i++) {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+
+  // Switch on the LED if an 1 was received as first character
+  if ((char)payload[0] == '1') {
+    //digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
+    // but actually the LED is on; this is because
+    // it is active low on the ESP-01)
+  } else {
+    //digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
+  }
+
+}
+
+void reconnect() {
+if (sysTime.sec % 5 == 0){
+    Serial.print("Attempting MQTT connection...");
+    // Set a client ID
+    String clientId = CLIENT_ID;
+    // Attempt to connect
+    if (client.connect(clientId.c_str())) {
+      Serial.println("connected");
+      // Once connected, publish an announcement...
+      client.publish("Status", "connected");
+      // ... and resubscribe
+      client.subscribe("inTopic");
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 5 seconds");
+    }
+  }
+}
+//------------------------------------------------------------------------------
 
 float getTemperature(DeviceAddress deviceAddress) {
   float tempC = sensors.getTempC(deviceAddress);
@@ -114,53 +190,37 @@ void setup() {
   // set the resolution to 10 bit (good enough?)
   sensors.setResolution(Thermometer1, 10);
   // setup output pins
-  pinMode(RELAY_PIN, OUTPUT);
-  pinMode(RELAY1_PIN, OUTPUT);
-  pinMode(RELAY2_PIN, OUTPUT);
-  pinMode(RELAY3_PIN, OUTPUT);
-  pinMode(RELAY4_PIN, OUTPUT);
+  //pinMode(RELAY_PIN, OUTPUT);
+  //pinMode(RELAY1_PIN, OUTPUT);
+  //pinMode(RELAY2_PIN, OUTPUT);
+  //pinMode(RELAY3_PIN, OUTPUT);
+  //pinMode(RELAY4_PIN, OUTPUT);
 
   // setup serial communication
 
-    Serial.begin(9600);
+    Serial.begin(57600);
   // setup ethernet communication using DHCP
-    Ethernet.begin(mac);
-//    Serial.println(F("Ethernet configured"));
-//    Serial.print(F("IP address: "));
-    Serial.println(Ethernet.localIP());
-    Serial.println();
+    setup_wifi();
 
   // setup mqtt client
-  mqttClient.setClient(ethClient);
-  mqttClient.setServer(mqttServer, 1883);
-  mqttClient.setCallback(callback);
-
-  if (mqttClient.connect(CLIENT_ID)) {
-    mqttClient.subscribe("inTopic");
-    Serial.println(F("MQTT client configured"));
-  } else {
-    reconnect();
-  }
-  Serial.println();
-//  Serial.println(F("Ready to send data"));
-  previousMillis = millis();
+  client.setServer(mqtt_server, 1883);
+  client.setCallback(callback);
 }
 
 void loop() {
-  sp = map(analogRead(SP_TEMP_PIN), 0, 1023, SP_MIN, SP_MAX);
-  sp = constrain(sp, SP_MIN, SP_MAX);
-  sensors.requestTemperatures();
-  t = getTemperature(Thermometer1);
-  discretRegul(t, sp , 1.0, RELAY_PIN);
+
+  //Serial.println("Start");
+  //delay(300);
+  //discretRegul(t, sp , 1.0, RELAY_PIN);
 
 
-  if (!mqttClient.connected()) {
-  reconnect();
+  if (!client.connected()) {
+   reconnect();
   }
+  client.loop();
   // it's time to send new data?
-  if (millis() - previousMillis > PUBLISH_DELAY) {
-    sendData();
-    previousMillis = millis();
+  if ((sysTime.min % PUBLISH_PERIOD) == 0) {
+  //  sendData();
   }
-  mqttClient.loop();
+
 }
