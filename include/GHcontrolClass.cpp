@@ -1,14 +1,19 @@
 #include <GHcontrolClass.h>
 
 
-void AnalogChannel::init(long minV, long maxV) {
-  counter++;
-  (counter > 3) ? channel = counter +2 : channel = counter;
-  minValue = minV;
-  maxValue = maxV;
+void AnalogChannel::setSetting(long minValue, long maxValue) {
+  this->minValue = minValue;
+  this->maxValue = maxValue;
 }
 
 void AnalogChannel::init() {
+  counter++;
+  (counter > 3) ? channel = counter +2 : channel = counter;
+  minValue = 0;
+  maxValue = 100;
+}
+
+AnalogChannel::AnalogChannel() {
   counter++;
   (counter > 3) ? channel = counter +2 : channel = counter;
   minValue = 0;
@@ -21,7 +26,11 @@ float AnalogChannel::value(){
   return (maxValue-minValue)*(rawReading / 1023.0) + minValue;
 }
 
-void DigitalChannel::init(uint8 diChannel){
+DigitalChannel::DigitalChannel(){
+  DigitalChannel(counter);
+}
+
+DigitalChannel::DigitalChannel(uint8 diChannel){
   switch (diChannel) {
     case ONE_WIRE_BUS:
       break;
@@ -36,9 +45,9 @@ bool DigitalChannel::value() {
   return  digitalRead(channel);
 }
 
-void Relay::init(uint8 _number){
-  number=_number;
-  channel = _number + DO_START - 1;
+Relay::Relay(){
+  counter++;
+  channel = counter + DO_START - 1;
   pinMode(channel, OUTPUT);
 }
 
@@ -49,14 +58,24 @@ bool Relay::get(){
 void Relay::set(bool s){
   digitalWrite(channel, s);
 }
+
 void Relay::toggle(){
   digitalWrite(channel, !digitalRead(channel));
 }
 
-
-void Thermometer::init(uint8 _number, DeviceAddress deviceAddress){
+Thermometer::Thermometer(){
   numberOfTherm++;
-  number = _number;
+  DeviceAddress Common_Address = { 0x28, 0x76, 0xAB, 0x77, 0x91, 0x11, 0x02, 0x4E  };
+  this->number = numberOfTherm;
+  for (uint8 i=0; i<8 ;i++){
+    Therm_Address[i] = Common_Address[i];
+  }
+
+}
+
+void Thermometer::init(uint8 number, DeviceAddress deviceAddress){
+  numberOfTherm++;
+  this->number = number;
   for (uint8 i=0; i<8 ;i++){
     Therm_Address[i] = deviceAddress[i];
   }
@@ -72,28 +91,27 @@ float Thermometer::value() {
   }
 };
 
+AnalogChannel *a;
+DigitalChannel *d;
+Relay *k;
+Thermometer *t;
+
 void GH::init(uint8 thermometers,
               DeviceAddress thermAddresses[],
               uint8 analogChannels,
               uint8 digitalChannels,
               uint8 relays){
-
-  for (uint8 i = 0; i< thermometers; i++){
+  a = new AnalogChannel[analogChannels];
+  d = new DigitalChannel[digitalChannels];
+  k = new Relay[relays];
+  t = new Thermometer[thermometers];
+  for (uint8 i = 0; i<thermometers; i++){
     t[i].init(i+1, thermAddresses[i]);
-    }
-  for (uint8 i = 0; i< analogChannels; i++){
-    a[i].init();
-    }
-  for (uint8 i = 0; i< digitalChannels; i++){
-    d[i].init(i+1);
-    }
-  for (uint8 i = 0; i< relays; i++){
-    k[i].init(i+1);
-    }
+  }
 }
 
 
-
+/*
 void GH::readAIs () {
   for (uint8 i =1; i < AI_NUM; i++) {
     a[i].value()
@@ -117,8 +135,8 @@ void writeDOs() {
   for (byte i =1; i < DO_NUM+1; i++) {
     digitalWrite(DO_START+i-1, !k[i]);
   }
-
 }
+*/
 
 void discretRegul(float pv, float sp, float deadband, int outport ) {
   if ((pv > sp + deadband) and !digitalRead(outport)) {

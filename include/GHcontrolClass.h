@@ -21,9 +21,9 @@ DeviceAddress Therm_Address [THERM_NUM] ={
 */
 class AnalogChannel {
 public:
-  //AnalogChannel();
+  AnalogChannel();
   void init();
-  void init(long minV, long maxV);
+  void setSetting(long minValue, long maxValue);
   float value();
 //void  set(float value);
 private:
@@ -36,30 +36,34 @@ uint8 AnalogChannel::counter = 0;
 
 class DigitalChannel {
 public:
-  void init(uint8 diChannel);
+  DigitalChannel();
+  DigitalChannel(uint8 diChannel);
   bool value();
 private:
   uint8 channel;
   static uint8 counter;
 // void set(bool value);
 };
+uint8 DigitalChannel::counter = 0;
 
 class Relay {
 public:
-  static void init(uint8 number);
+  Relay();
+  void init(uint8 number);
   bool get();
-  static void set(bool s);
-  static void toggle();
+  void set(bool s);
+  void toggle();
   uint8 number;
 private:
   uint8 channel;
   static uint8 counter;
 };
+uint8 Relay::counter = 0;
 
 class Thermometer {
 public:
   static uint8 numberOfTherm;
-  //Thermometer();
+  Thermometer();
   //Thermometer(uint8 number, DeviceAddress deviceAddress);
   void init(uint8 number, DeviceAddress deviceAddress);
   float value();
@@ -95,8 +99,9 @@ public:
     void init();
     void run();
 };
-
+/*
 Thermometer t[THERM_NUM];
 AnalogChannel a[AI_NUM];
 DigitalChannel d[DI_NUM];
 Relay k[DO_NUM];
+*/
