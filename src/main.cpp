@@ -1,9 +1,9 @@
 #include <Arduino.h>
-#include <UIPEthernet.h>
+//#include <UIPEthernet.h>
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
-#include <DallasTemperature.h>
-
+//#include <DallasTemperature.h>
+#include "GHcontrolClass.h"
 #include <timeClass.cpp>
 
 #define CLIENT_ID "arduino"
@@ -22,12 +22,14 @@
 SysTime sysTime;
 
 // Setup a oneWire instance to communicate with any OneWire devices
-OneWire oneWire(ONE_WIRE_BUS);
+//OneWire oneWire(ONE_WIRE_BUS);
 
 // Pass our oneWire reference to Dallas Temperature.
-DallasTemperature sensors(&oneWire);
+//DallasTemperature sensors(&oneWire);
 
-DeviceAddress Thermometer1 = { 0x28, 0x85, 0xC7, 0x5B, 0x1E, 0x13, 0x01, 0x79 }; //28 85 C7 5B 1E 13 1 79
+uint8_t Thermometers[2][8] = {
+                                  {0x28, 0x85, 0xC7, 0x5B, 0x1E, 0x13, 0x01, 0x79},
+                                  {0x28, 0x85, 0xC7, 0x5B, 0x1E, 0x13, 0x01, 0x79}}; //28 85 C7 5B 1E 13 1 79
 /*// MAC-адрес нашего устройства
 byte mac[] = { 0x00, 0x2A, 0xF6, 0x12, 0x68, 0xFC };
 // ip-адрес устройства
@@ -168,27 +170,17 @@ if (sysTime.sec % 5 == 0){
 }
 //------------------------------------------------------------------------------
 
-float getTemperature(DeviceAddress deviceAddress) {
-  float tempC = sensors.getTempC(deviceAddress);
-   if (tempC == -127.00) {
-    return NAN;
-   } else {
-    return tempC;
-   }
- }
-void discretRegul(float pv, float sp, float deadband, int outport ) {
-  if ((pv > sp + deadband) and !digitalRead(outport)) {
-    digitalWrite(outport, HIGH);
-  } else if  ((pv < sp - deadband) and digitalRead(outport)) {
-    digitalWrite (outport, LOW);
-  }
-}
-
-
 void setup() {
-  sensors.begin();
+
+  GHcontroler.init(1,5,2);
+  int b = sysTime.sec;
+  GHcontroler.run();
+
+  
+  float a1 = GHcontroler.a[0].value();
+  //sensors.begin();
   // set the resolution to 10 bit (good enough?)
-  sensors.setResolution(Thermometer1, 10);
+  //sensors.setResolution(Thermometer1, 10);
   // setup output pins
   //pinMode(RELAY_PIN, OUTPUT);
   //pinMode(RELAY1_PIN, OUTPUT);

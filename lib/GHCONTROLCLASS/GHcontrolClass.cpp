@@ -1,5 +1,17 @@
-#include <GHcontrolClass.h>
+#include "GHcontrolClass.h"
 
+// Setup a oneWire instance to communicate with any OneWire devices
+OneWire oneWire(ONE_WIRE_BUS);
+
+// Pass our oneWire reference to Dallas Temperature.
+DallasTemperature sensors(&oneWire);
+
+DeviceAddress Therm_Address [THERM_NUM] ={
+   { 0x28, 0x76, 0xAB, 0x77, 0x91, 0x11, 0x02, 0x4E  },
+   { 0x28, 0x69, 0x34, 0x77, 0x91, 0x0B, 0x02, 0xE2  }
+ };
+
+uint8 AnalogChannel::counter = 0;
 
 void AnalogChannel::setSetting(long minValue, long maxValue) {
   this->minValue = minValue;
@@ -26,6 +38,8 @@ float AnalogChannel::value(){
   return (maxValue-minValue)*(rawReading / 1023.0) + minValue;
 }
 
+uint8 DigitalChannel::counter = 0;
+
 DigitalChannel::DigitalChannel(){
   DigitalChannel(counter);
 }
@@ -45,6 +59,8 @@ bool DigitalChannel::value() {
   return  digitalRead(channel);
 }
 
+uint8 Relay::counter = 0;
+
 Relay::Relay(){
   counter++;
   channel = counter + DO_START - 1;
@@ -62,6 +78,8 @@ void Relay::set(bool s){
 void Relay::toggle(){
   digitalWrite(channel, !digitalRead(channel));
 }
+
+uint8 Thermometer::numberOfTherm = 0;
 
 Thermometer::Thermometer(){
   numberOfTherm++;
@@ -91,16 +109,12 @@ float Thermometer::value() {
   }
 };
 
-AnalogChannel *a;
-DigitalChannel *d;
-Relay *k;
-Thermometer *t;
 
 void GH::init(uint8 thermometers,
-              DeviceAddress thermAddresses[],
-              uint8 analogChannels,
-              uint8 digitalChannels,
-              uint8 relays){
+                DeviceAddress thermAddresses[],
+                uint8 analogChannels,
+                uint8 digitalChannels,
+                uint8 relays) {
   a = new AnalogChannel[analogChannels];
   d = new DigitalChannel[digitalChannels];
   k = new Relay[relays];
@@ -110,6 +124,15 @@ void GH::init(uint8 thermometers,
   }
 }
 
+void GH::init(uint8 analogChannels,
+              uint8 digitalChannels,
+              uint8 relays){
+  a = new AnalogChannel[analogChannels];
+  d = new DigitalChannel[digitalChannels];
+  k = new Relay[relays];
+}
+
+void GH::run(){};
 
 /*
 void GH::readAIs () {
@@ -145,3 +168,5 @@ void discretRegul(float pv, float sp, float deadband, int outport ) {
     digitalWrite (outport, LOW);
   }
 }
+
+GH GHcontroler;

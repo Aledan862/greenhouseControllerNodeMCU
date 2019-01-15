@@ -1,3 +1,6 @@
+#ifndef GH_h
+#define GH_h
+
 #include <Arduino.h>
 #include <DallasTemperature.h>
 
@@ -8,31 +11,20 @@
 #define DO_START 7  //с какого пина начинается отсчет для выходов
 #define DO_NUM 3    //макс количество дискретных выходов
 
-// Setup a oneWire instance to communicate with any OneWire devices
-OneWire oneWire(ONE_WIRE_BUS);
-
-// Pass our oneWire reference to Dallas Temperature.
-DallasTemperature sensors(&oneWire);
-/*
-DeviceAddress Therm_Address [THERM_NUM] ={
-   { 0x28, 0x76, 0xAB, 0x77, 0x91, 0x11, 0x02, 0x4E  },
-   { 0x28, 0x69, 0x34, 0x77, 0x91, 0x0B, 0x02, 0xE2  }
- };
-*/
 class AnalogChannel {
 public:
   AnalogChannel();
   void init();
   void setSetting(long minValue, long maxValue);
   float value();
+  static uint8 counter;
 //void  set(float value);
 private:
   uint8 channel;
   long minValue;
   long maxValue;
-  static uint8 counter;
 };
-uint8 AnalogChannel::counter = 0;
+
 
 class DigitalChannel {
 public:
@@ -44,7 +36,7 @@ private:
   static uint8 counter;
 // void set(bool value);
 };
-uint8 DigitalChannel::counter = 0;
+
 
 class Relay {
 public:
@@ -58,7 +50,7 @@ private:
   uint8 channel;
   static uint8 counter;
 };
-uint8 Relay::counter = 0;
+
 
 class Thermometer {
 public:
@@ -72,21 +64,28 @@ private:
   DeviceAddress Therm_Address;
 };
 
-uint8 Thermometer::numberOfTherm = 0;
 
 class GH {
 public:
-static  void init(uint8 thermometers,
+  AnalogChannel *a;
+  DigitalChannel *d;
+  Relay *k;
+  Thermometer *t;
+
+void init(uint8 thermometers,
             DeviceAddress thermAddresses[],
             uint8 analogChannels,
             uint8 digitalChannel,
             uint8 relay);
-  void run();
+void init(uint8 analogChannels,
+          uint8 digitalChannels,
+          uint8 relays);
+void run();
 private:
-  void readThemperatures();
-  void readAIs();
-  void readDOs();
-  void writeDOs();
+  //void readThemperatures();
+  //void readAIs();
+  //void readDOs();
+  //void writeDOs();
 };
 
 class discretRegul {
@@ -99,6 +98,11 @@ public:
     void init();
     void run();
 };
+
+extern GH GHcontroler;
+
+#endif
+
 /*
 Thermometer t[THERM_NUM];
 AnalogChannel a[AI_NUM];
