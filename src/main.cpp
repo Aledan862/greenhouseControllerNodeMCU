@@ -13,11 +13,11 @@
 #define PUBLISH_PERIOD 30  //период отправки данных в секундах
 #define ONE_WIRE_BUS 2 //номер цифрового канала для шины 1-wire
 #define SP_TEMP_PIN A0 //номер пина для потенциометра регулирования уставки температуры
-#define THERM_NUM 2  //количество термометров
-#define AI_NUM 5     // количество аналогов
-#define DO_START 7  //с какого пина начинается отсчет
+#define THERM_NUM 1  //количество термометров
+#define AI_NUM 1     // количество аналогов
+#define DO_START 5  //с какого пина начинается отсчет
 #define DO_NUM 3     // дискретные выходы
-
+#define WIFISETTING 1
 //systemtimeobject
 SysTime sysTime;
 
@@ -96,9 +96,8 @@ void reconnect() {
 */
 //----------------------Setup Ethernet minmaxSetting----------------------------
 // Update these with values suitable for your network.
-
-const char* ssid = "DLink320";
-const char* password = "9122oleg";
+const char* ssid = "WHITE HOUSE";
+const char* password = "donaldtrumP";
 const char* mqtt_server = "185.228.232.60";
 
 WiFiClient espClient;
@@ -106,6 +105,9 @@ PubSubClient client(espClient);
 long lastMsg = 0;
 char msg[50];
 int value = 0;
+
+float t,sp;
+
 void setup_wifi() {
 
   delay(10);
@@ -168,16 +170,32 @@ if (sysTime.sec % 5 == 0){
     }
   }
 }
+
+void sendData() {
+  char msgBuffer[20];
+  if (client.connect(CLIENT_ID)) {
+    client.publish(TOPIC_TEMP, dtostrf(t, 6, 2, msgBuffer));
+    client.publish(TOPIC_TEMP_SP, dtostrf(sp, 6, 2, msgBuffer));
+
+    //mqttClient.publish("arduino/Moisture", dtostrf(moist, 6, 2, msgBuffer));
+    //mqttClient.publish("arduino/Moisture_digital", (digitalRead(3) == HIGH) ? "Сухо" : "Влажно");
+    //Serial.print(F("Temperature: "));
+    //Serial.print(t);
+    Serial.print(F(" Уставка: "));
+    Serial.print(sp);
+    Serial.print(analogRead(15));
+    //Serial.println((digitalRead(RELAY_PIN) == HIGH) ? " Остываем" : " Греем");
+  }
+}
+
 //------------------------------------------------------------------------------
 
 void setup() {
 
   GHcontroler.init(1,5,2);
   int b = sysTime.sec;
+  GHcontroler.a[0].setSetting(20, 80);
   GHcontroler.run();
-
-  
-  float a1 = GHcontroler.a[0].value();
   //sensors.begin();
   // set the resolution to 10 bit (good enough?)
   //sensors.setResolution(Thermometer1, 10);
@@ -204,6 +222,8 @@ void loop() {
   //Serial.println("Start");
   //delay(300);
   //discretRegul(t, sp , 1.0, RELAY_PIN);
+  sp = GHcontroler.a[0].value();
+
 
 
   if (!client.connected()) {
@@ -212,7 +232,7 @@ void loop() {
   client.loop();
   // it's time to send new data?
   if ((sysTime.min % PUBLISH_PERIOD) == 0) {
-  //  sendData();
+    sendData();
   }
 
 }

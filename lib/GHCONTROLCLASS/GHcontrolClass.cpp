@@ -20,14 +20,14 @@ void AnalogChannel::setSetting(long minValue, long maxValue) {
 
 void AnalogChannel::init() {
   counter++;
-  (counter > 3) ? channel = counter +2 : channel = counter;
+  (counter > 3) ? channel = counter +2 + 14 : channel = counter + 14;
   minValue = 0;
   maxValue = 100;
 }
 
 AnalogChannel::AnalogChannel() {
   counter++;
-  (counter > 3) ? channel = counter +2 : channel = counter;
+  (counter > 3) ? channel = counter +2+14 : channel = counter+14;
   minValue = 0;
   maxValue = 100;
 }
