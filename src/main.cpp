@@ -21,6 +21,7 @@
 //systemtimeobject
 SysTime sysTime;
 
+//AnalogChannel analog0;
 // Setup a oneWire instance to communicate with any OneWire devices
 //OneWire oneWire(ONE_WIRE_BUS);
 
@@ -96,8 +97,8 @@ void reconnect() {
 */
 //----------------------Setup Ethernet minmaxSetting----------------------------
 // Update these with values suitable for your network.
-const char* ssid = "WHITE HOUSE";
-const char* password = "donaldtrumP";
+const char* ssid = "Technolink15_2G";
+const char* password = "TL12345678";
 const char* mqtt_server = "185.228.232.60";
 
 WiFiClient espClient;
@@ -105,7 +106,7 @@ PubSubClient client(espClient);
 long lastMsg = 0;
 char msg[50];
 int value = 0;
-
+AnalogChannel *analogObj = new AnalogChannel();
 float t,sp;
 
 void setup_wifi() {
@@ -173,19 +174,12 @@ if (sysTime.sec % 5 == 0){
 
 void sendData() {
   char msgBuffer[20];
+  char topic[32];
   if (sysTime.newSec) {
     client.publish(TOPIC_TEMP, dtostrf(t, 6, 2, msgBuffer));
-    client.publish(TOPIC_TEMP_SP, dtostrf(sp, 6, 2, msgBuffer));
+    analogObj->descr.toCharArray(topic, 32);
+    client.publish(topic, dtostrf(analogObj->value(), 6, 2, msgBuffer));
 
-    //mqttClient.publish("arduino/Moisture", dtostrf(moist, 6, 2, msgBuffer));
-    //mqttClient.publish("arduino/Moisture_digital", (digitalRead(3) == HIGH) ? "Сухо" : "Влажно");
-    //Serial.print(F("Temperature: "));
-    //Serial.print(t);
-    Serial.print(F(" Уставка sp = "));
-    Serial.print(sp);
-    Serial.print(F(" Уставка analogRead(15) = "));
-    Serial.println(analogRead(17));
-    //Serial.println((digitalRead(RELAY_PIN) == HIGH) ? " Остываем" : " Греем");
     sysTime.newSec = 0;
   }
 }
@@ -193,40 +187,27 @@ void sendData() {
 //------------------------------------------------------------------------------
 
 void setup() {
+// setup serial communication
+Serial.begin(57600);
+Serial.println("Стартуем");
 
-  GHcontroler.init(1,1);
-//  int b = sysTime.sec;
-  GHcontroler.a[0].setSetting(20, 80);
-  GHcontroler.run();
-  //sensors.begin();
-  // set the resolution to 10 bit (good enough?)
-  //sensors.setResolution(Thermometer1, 10);
-  // setup output pins
-  //pinMode(RELAY_PIN, OUTPUT);
-  //pinMode(RELAY1_PIN, OUTPUT);
-  //pinMode(RELAY2_PIN, OUTPUT);
-  //pinMode(RELAY3_PIN, OUTPUT);
-  //pinMode(RELAY4_PIN, OUTPUT);
+analogObj->setSetting(10, 50);
+analogObj->descr = "arduino/temp_sp";
 
-  // setup serial communication
-
-    Serial.begin(57600);
   // setup ethernet communication using DHCP
     setup_wifi();
 
   // setup mqtt client
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
+  sysTime.tick();
 }
 
-void loop() {
-  sysTime.tick();
-  //Serial.println("Start");
-  //delay(300);
-  //discretRegul(t, sp , 1.0, RELAY_PIN);
-  //sp = GHcontroler.a[0].value();
 
-  sp = GHcontroler.a[0].value();
+void loop() {
+sysTime.tick();
+Serial.print("значение analogObj");
+Serial.println(analogObj->value());
 
   if (!client.connected()) {
    reconnect();
@@ -234,10 +215,7 @@ void loop() {
   client.loop();
   // it's time to send new data?
   if ((sysTime.sec % PUBLISH_PERIOD) == 0) {
-    Serial.print("Секунды ");
-    Serial.print(millis());
     sendData();
-
   }
 delay(300);
 }

@@ -18,6 +18,7 @@ public:
   void setSetting(long minValue, long maxValue);
   float value();
   static uint8 counter;
+  String descr;
 //void  set(float value);
 private:
   uint8 channel;
@@ -67,11 +68,11 @@ private:
 
 class GH {
 public:
-  AnalogChannel *a;
-  DigitalChannel *d;
-  Relay *k;
-  Thermometer *t;
-
+  AnalogChannel* a;
+  DigitalChannel* d;
+  Relay* k;
+  Thermometer* t;
+  GH();
 void init(uint8 thermometers,
             DeviceAddress thermAddresses[],
             uint8 analogChannels,
@@ -98,9 +99,6 @@ public:
     void init();
     void run();
 };
-
-extern GH GHcontroler;
-
 #endif
 
 /*
