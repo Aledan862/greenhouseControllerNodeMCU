@@ -65,13 +65,14 @@ Relay::Relay(){
   counter++;
   channel = counter + DO_START - 1;
   pinMode(channel, OUTPUT);
+  digitalWrite(channel, LOW);
 }
 
-bool Relay::get(){
+bool Relay::value(){
   return digitalRead(channel);
 }
 
-void Relay::set(bool s){
+void Relay::value(bool s){
   digitalWrite(channel, s);
 }
 
@@ -167,10 +168,18 @@ void writeDOs() {
 }
 */
 
-void discretRegul(float pv, float sp, float deadband, int outport ) {
-  if ((pv > sp + deadband) and !digitalRead(outport)) {
-    digitalWrite(outport, HIGH);
-  } else if  ((pv < sp - deadband) and digitalRead(outport)) {
-    digitalWrite (outport, LOW);
+void DiscretRegul::init(float *pv, float *sp, float deadband, Relay relay){
+  _pv = pv;
+  //this->pv = pv;
+  _sp = sp;
+  this->deadband = deadband;
+  outport = relay.number;
+};
+
+void discretRegul(float pv, float sp, float deadband, Relay outport ) {
+  if ((pv > sp + deadband) and !outport.value()) {
+    outport.value(1);
+  } else if  ((pv < sp - deadband) and outport.value()) {
+    outport.value(0);
   }
 }

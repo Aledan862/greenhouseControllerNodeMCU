@@ -4,12 +4,12 @@
 #include <Arduino.h>
 #include <DallasTemperature.h>
 
-#define ONE_WIRE_BUS 2
+#define ONE_WIRE_BUS 1
 #define THERM_NUM 2  //количество термометров
-#define AI_NUM 5     //макс количество аналогов
-#define DI_NUM 4    //макс количество дискретных входов
-#define DO_START 7  //с какого пина начинается отсчет для выходов
-#define DO_NUM 3    //макс количество дискретных выходов
+//#define AI_NUM 5     //макс количество аналогов
+//#define DI_NUM 4    //макс количество дискретных входов
+#define DO_START 2  //с какого пина начинается отсчет для выходов
+//#define DO_NUM 3    //макс количество дискретных выходов
 
 class AnalogChannel {
 public:
@@ -43,8 +43,8 @@ class Relay {
 public:
   Relay();
   void init(uint8 number);
-  bool get();
-  void set(bool s);
+  bool value();
+  void value(bool s);
   void toggle();
   uint8 number;
 private:
@@ -89,16 +89,18 @@ private:
   //void writeDOs();
 };
 
-class discretRegul {
+class DiscretRegul {
 public:
-    float pv;
-    float sp;
+    float *_pv;
+    float *_sp;
     float deadband;
     int outport;
 
-    void init();
+    void init(float *pv, float *sp, float deadband, Relay relay);
     void run();
 };
+
+extern void discretRegul(float pv, float sp, float deadband, Relay outport );
 #endif
 
 /*

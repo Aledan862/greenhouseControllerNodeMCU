@@ -11,13 +11,13 @@
 #define TOPIC_OUT "arduino/relay"
 #define TOPIC_TEMP_SP "arduino/temp_sp"
 #define PUBLISH_PERIOD 30  //период отправки данных в секундах
-#define ONE_WIRE_BUS 1 //номер цифрового канала для шины 1-wire
-#define SP_TEMP_PIN A0 //номер пина для потенциометра регулирования уставки температуры
-#define THERM_NUM 1  //количество термометров
-#define AI_NUM 1     // количество аналогов
-#define DO_START 3  //с какого пина начинается отсчет
-#define DO_NUM 1     // дискретные выходы
-#define WIFISETTING 1
+//#define ONE_WIRE_BUS 0 //номер цифрового канала для шины 1-wire
+//#define SP_TEMP_PIN A0 //номер пина для потенциометра регулирования уставки температуры
+//#define THERM_NUM 1  //количество термометров
+//#define AI_NUM 1     // количество аналогов
+//#define DO_START 1  //с какого пина начинается отсчет
+//#define DO_NUM 1     // дискретные выходы
+//#define WIFISETTING 1
 //systemtimeobject
 SysTime sysTime;
 
@@ -97,17 +97,19 @@ void reconnect() {
 */
 //----------------------Setup Ethernet minmaxSetting----------------------------
 // Update these with values suitable for your network.
-const char* ssid = "Technolink15_2G";
-const char* password = "TL12345678";
+const char* ssid = "WHITE HOUSE";
+const char* password = "donaldtrumP";
 const char* mqtt_server = "185.228.232.60";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
-long lastMsg = 0;
-char msg[50];
-int value = 0;
+//long lastMsg = 0;
+//char msg[50];
+
 AnalogChannel *analogObj = new AnalogChannel();
-float t,sp;
+Thermometer   *hotWater = new Thermometer();
+//Relay         *led1 = new Relay();
+//DiscretRegul ten1;
 
 void setup_wifi() {
 
@@ -176,7 +178,7 @@ void sendData() {
   char msgBuffer[20];
   char topic[32];
   if (sysTime.newSec) {
-    client.publish(TOPIC_TEMP, dtostrf(t, 6, 2, msgBuffer));
+    client.publish(TOPIC_TEMP, dtostrf(hotWater->value(), 6, 2, msgBuffer));
     analogObj->descr.toCharArray(topic, 32);
     client.publish(topic, dtostrf(analogObj->value(), 6, 2, msgBuffer));
 
@@ -184,30 +186,47 @@ void sendData() {
   }
 }
 
+
 //------------------------------------------------------------------------------
 
 void setup() {
-// setup serial communication
-Serial.begin(57600);
-Serial.println("Стартуем");
-
-analogObj->setSetting(10, 50);
-analogObj->descr = "arduino/temp_sp";
-
+  // setup serial communication
+  Serial.begin(57600);
+  Serial.println("Стартуем");
   // setup ethernet communication using DHCP
-    setup_wifi();
-
+  setup_wifi();
   // setup mqtt client
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
+  //тикаем время
   sysTime.tick();
+  //-----------сигналы ввода вывода--------------------------------------------
+  //настройка потенциометра уставки температуры
+  analogObj->setSetting(10, 50);
+  analogObj->descr = "arduino/temp_sp";
+  //термометр горячей воды
+  DeviceAddress hotWaterAddr = { 0x28, 0x71, 0x3C, 0x77, 0x91, 0x13, 0x02, 0xBC  };
+  hotWater->init(1, hotWaterAddr);
+  //симулятор реле
+  //  led1
+  pinMode(3, OUTPUT);
+
+  //дискретный регулятор
+  //ten1.init(hotWater->value(), analogObj->value(), 2, led1);
+
 }
 
 
 void loop() {
 sysTime.tick();
-Serial.print("значение analogObj");
+Serial.print("значение analogObj ");
 Serial.println(analogObj->value());
+Serial.print("значение hotWater ");
+Serial.println(hotWater->value());
+//Serial.print("значение led ");
+//Serial.println(led1->value());
+//discretRegul(hotWater->value(), analogObj->value(), 2.0 , *led1);
+digitalWrite(3, sysTime.sec % 2);
 
   if (!client.connected()) {
    reconnect();
