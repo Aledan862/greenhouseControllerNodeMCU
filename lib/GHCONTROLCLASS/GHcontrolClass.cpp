@@ -20,14 +20,14 @@ void AnalogChannel::setSetting(long minValue, long maxValue) {
 
 void AnalogChannel::init() {
   counter++;
-  (counter > 3) ? channel = counter +2 + 14 : channel = counter + 14;
+  (counter > 3) ? channel = counter +2 + 16 : channel = counter + 16;
   minValue = 0;
   maxValue = 100;
 }
 
 AnalogChannel::AnalogChannel() {
   counter++;
-  (counter > 3) ? channel = counter +2+14 : channel = counter+14;
+  (counter > 3) ? channel = counter +2+16 : channel = counter+16;
   minValue = 0;
   maxValue = 100;
 }
@@ -125,10 +125,10 @@ void GH::init(uint8 thermometers,
 }
 
 void GH::init(uint8 analogChannels,
-              uint8 digitalChannels,
+//              uint8 digitalChannels,
               uint8 relays){
   a = new AnalogChannel[analogChannels];
-  d = new DigitalChannel[digitalChannels];
+  //d = new DigitalChannel[digitalChannels];
   k = new Relay[relays];
 }
 

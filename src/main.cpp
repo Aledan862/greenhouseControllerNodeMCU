@@ -11,12 +11,12 @@
 #define TOPIC_OUT "arduino/relay"
 #define TOPIC_TEMP_SP "arduino/temp_sp"
 #define PUBLISH_PERIOD 30  //период отправки данных в секундах
-#define ONE_WIRE_BUS 2 //номер цифрового канала для шины 1-wire
+#define ONE_WIRE_BUS 1 //номер цифрового канала для шины 1-wire
 #define SP_TEMP_PIN A0 //номер пина для потенциометра регулирования уставки температуры
 #define THERM_NUM 1  //количество термометров
 #define AI_NUM 1     // количество аналогов
-#define DO_START 5  //с какого пина начинается отсчет
-#define DO_NUM 3     // дискретные выходы
+#define DO_START 3  //с какого пина начинается отсчет
+#define DO_NUM 1     // дискретные выходы
 #define WIFISETTING 1
 //systemtimeobject
 SysTime sysTime;
@@ -173,7 +173,7 @@ if (sysTime.sec % 5 == 0){
 
 void sendData() {
   char msgBuffer[20];
-  if (client.connect(CLIENT_ID)) {
+  if (sysTime.newSec) {
     client.publish(TOPIC_TEMP, dtostrf(t, 6, 2, msgBuffer));
     client.publish(TOPIC_TEMP_SP, dtostrf(sp, 6, 2, msgBuffer));
 
@@ -181,10 +181,12 @@ void sendData() {
     //mqttClient.publish("arduino/Moisture_digital", (digitalRead(3) == HIGH) ? "Сухо" : "Влажно");
     //Serial.print(F("Temperature: "));
     //Serial.print(t);
-    Serial.print(F(" Уставка: "));
+    Serial.print(F(" Уставка sp = "));
     Serial.print(sp);
-    Serial.print(analogRead(15));
+    Serial.print(F(" Уставка analogRead(15) = "));
+    Serial.println(analogRead(17));
     //Serial.println((digitalRead(RELAY_PIN) == HIGH) ? " Остываем" : " Греем");
+    sysTime.newSec = 0;
   }
 }
 
@@ -192,8 +194,8 @@ void sendData() {
 
 void setup() {
 
-  GHcontroler.init(1,5,2);
-  int b = sysTime.sec;
+  GHcontroler.init(1,1);
+//  int b = sysTime.sec;
   GHcontroler.a[0].setSetting(20, 80);
   GHcontroler.run();
   //sensors.begin();
@@ -218,21 +220,24 @@ void setup() {
 }
 
 void loop() {
-
+  sysTime.tick();
   //Serial.println("Start");
   //delay(300);
   //discretRegul(t, sp , 1.0, RELAY_PIN);
+  //sp = GHcontroler.a[0].value();
+
   sp = GHcontroler.a[0].value();
-
-
 
   if (!client.connected()) {
    reconnect();
   }
   client.loop();
   // it's time to send new data?
-  if ((sysTime.min % PUBLISH_PERIOD) == 0) {
+  if ((sysTime.sec % PUBLISH_PERIOD) == 0) {
+    Serial.print("Секунды ");
+    Serial.print(millis());
     sendData();
-  }
 
+  }
+delay(300);
 }

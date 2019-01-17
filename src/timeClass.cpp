@@ -3,6 +3,7 @@
 class SysTime {
 public:
   uint8_t sec, min, hour, day;
+  bool newSec = 0;
   void tick() {
     sec = (millis() / 1000)%60;
     if ((last_sec == 59) && (sec == 0)) {
@@ -14,6 +15,9 @@ public:
     if ((last_hour == 23) && (hour == 0)) {
       day = (day+1)%365;
     }
+
+  if (sec!=last_sec) {newSec = 1;}
+
   last_sec = sec;
   last_min = min;
   last_hour = hour;

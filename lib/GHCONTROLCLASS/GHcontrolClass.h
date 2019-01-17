@@ -78,7 +78,7 @@ void init(uint8 thermometers,
             uint8 digitalChannel,
             uint8 relay);
 void init(uint8 analogChannels,
-          uint8 digitalChannels,
+//          uint8 digitalChannels,
           uint8 relays);
 void run();
 private:
