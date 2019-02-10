@@ -1,15 +1,18 @@
 #include "GHcontrolClass.h"
 
+// Pin addressing            D0,D1,D2,D3,D4,D05,D06,D07,D08
+uint8 gpio_Addressing [9] = {16, 5, 4, 0, 2, 14, 12, 13, 15};
+
 // Setup a oneWire instance to communicate with any OneWire devices
-OneWire oneWire(ONE_WIRE_BUS);
+OneWire oneWire(gpio_Addressing[ONE_WIRE_BUS]);
 
 // Pass our oneWire reference to Dallas Temperature.
 DallasTemperature sensors(&oneWire);
 
-DeviceAddress Therm_Address [THERM_NUM] ={
-   { 0x28, 0x76, 0xAB, 0x77, 0x91, 0x11, 0x02, 0x4E  },
-   { 0x28, 0x69, 0x34, 0x77, 0x91, 0x0B, 0x02, 0xE2  }
- };
+// DeviceAddress therm_Address [THERM_NUM] ={
+//    { 0x28, 0x76, 0xAB, 0x77, 0x91, 0x11, 0x02, 0x4E  },
+//    { 0x28, 0x69, 0x34, 0x77, 0x91, 0x0B, 0x02, 0xE2  }
+//  };
 
 uint8 AnalogChannel::counter = 0;
 
@@ -41,16 +44,17 @@ float AnalogChannel::value(){
 uint8 DigitalChannel::counter = 0;
 
 DigitalChannel::DigitalChannel(){
-  DigitalChannel(counter);
-}
-
-DigitalChannel::DigitalChannel(uint8 diChannel){
-  switch (diChannel) {
+  switch (counter) {
     case ONE_WIRE_BUS:
+      counter++; //добавляем 1 чтобы перейти на следующий вход
+      channel = gpio_Addressing[counter];
+      pinMode(channel, INPUT);
+      counter++;
       break;
     default:
-      pinMode(diChannel, INPUT);
-      channel = diChannel;
+      channel = gpio_Addressing[counter];
+      pinMode(channel, INPUT);
+      counter++;
       break;
   }
 }
@@ -63,7 +67,7 @@ uint8 Relay::counter = 0;
 
 Relay::Relay(){
   counter++;
-  channel = counter + DO_START - 1;
+  channel = gpio_Addressing[counter + DO_START - 1];
   pinMode(channel, OUTPUT);
   digitalWrite(channel, LOW);
 }
@@ -101,7 +105,7 @@ void Thermometer::init(uint8 number, DeviceAddress deviceAddress){
 }
 
 float Thermometer::value() {
-
+  sensors.requestTemperatures();
   float tempC = sensors.getTempC(Therm_Address);
   if (tempC == -127.00) {
     return NAN;
@@ -168,18 +172,18 @@ void writeDOs() {
 }
 */
 
-void DiscretRegul::init(float *pv, float *sp, float deadband, Relay relay){
+void DiscretRegul::init(float *pv, float *sp, float deadband, Relay *relay){
   _pv = pv;
   //this->pv = pv;
   _sp = sp;
   this->deadband = deadband;
-  outport = relay.number;
+  outport = relay->number;
 };
 
-void discretRegul(float pv, float sp, float deadband, Relay outport ) {
-  if ((pv > sp + deadband) and !outport.value()) {
-    outport.value(1);
-  } else if  ((pv < sp - deadband) and outport.value()) {
+void discretRegul(float pv, float sp, float deadband, Relay  outport ) {
+  if ((pv > sp + deadband) and outport.value()) {
     outport.value(0);
+  } else if  ((pv < sp - deadband) and !outport.value()) {
+    outport.value(1);
   }
 }

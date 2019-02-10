@@ -108,8 +108,8 @@ PubSubClient client(espClient);
 
 AnalogChannel *analogObj = new AnalogChannel();
 Thermometer   *hotWater = new Thermometer();
-//Relay         *led1 = new Relay();
-//DiscretRegul ten1;
+Relay         led[3];
+//DiscretRegul  ten1;
 
 void setup_wifi() {
 
@@ -205,11 +205,11 @@ void setup() {
   analogObj->setSetting(10, 50);
   analogObj->descr = "arduino/temp_sp";
   //термометр горячей воды
-  DeviceAddress hotWaterAddr = { 0x28, 0x71, 0x3C, 0x77, 0x91, 0x13, 0x02, 0xBC  };
+  DeviceAddress hotWaterAddr = { 0x28, 0x0B, 0x5F, 0x77, 0x91, 0x14, 0x02, 0xDA  };
   hotWater->init(1, hotWaterAddr);
   //симулятор реле
-  //  led1
-  pinMode(3, OUTPUT);
+  //led1->toggle()
+  pinMode(16, OUTPUT);
 
   //дискретный регулятор
   //ten1.init(hotWater->value(), analogObj->value(), 2, led1);
@@ -224,9 +224,11 @@ Serial.println(analogObj->value());
 Serial.print("значение hotWater ");
 Serial.println(hotWater->value());
 //Serial.print("значение led ");
-//Serial.println(led1->value());
-//discretRegul(hotWater->value(), analogObj->value(), 2.0 , *led1);
-digitalWrite(3, sysTime.sec % 2);
+Serial.println(led[1].value());
+
+discretRegul(hotWater->value(), analogObj->value(), 2.0 , led[1]);
+discretRegul(hotWater->value(), analogObj->value(), 2.0 , led[2]);
+digitalWrite(16, sysTime.sec % 2);
 
   if (!client.connected()) {
    reconnect();
