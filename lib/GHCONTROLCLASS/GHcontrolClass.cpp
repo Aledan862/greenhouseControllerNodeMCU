@@ -187,3 +187,22 @@ void discretRegul(float pv, float sp, float deadband, Relay  outport ) {
     outport.value(1);
   }
 }
+
+  void SysTime::tick() {
+    sec = (millis() / 1000)%60;
+    if ((last_sec == 59) && (sec == 0)) {
+      min = (min+1)%60;
+    }
+    if ((last_min == 59) && (min == 0)) {
+      hour = (hour+1)%24;
+    }
+    if ((last_hour == 23) && (hour == 0)) {
+      day = (day+1)%365;
+    }
+
+  if (sec!=last_sec) {newSec = 1;}
+
+  last_sec = sec;
+  last_min = min;
+  last_hour = hour;
+  };

@@ -11,6 +11,15 @@
 #define DO_START 5  //с какого пина начинается отсчет для выходов
 //#define DO_NUM 3    //макс количество дискретных выходов
 
+class SysTime {
+public:
+  uint8_t sec, min, hour, day;
+  bool newSec = 0;
+  void tick();
+private:
+  uint8_t last_sec, last_min, last_hour;
+};
+
 class AnalogChannel {
 public:
   AnalogChannel();
