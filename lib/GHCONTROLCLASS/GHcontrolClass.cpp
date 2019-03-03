@@ -38,7 +38,8 @@ AnalogChannel::AnalogChannel() {
 
 float AnalogChannel::value(){
   int rawReading = analogRead(channel);
-  return (maxValue-minValue)*(rawReading / 1023.0) + minValue;
+  this->val = (maxValue-minValue)*(rawReading / 1023.0) + minValue;
+  return this->val;
 }
 
 uint8 DigitalChannel::counter = 0;
@@ -60,7 +61,8 @@ DigitalChannel::DigitalChannel(){
 }
 
 bool DigitalChannel::value() {
-  return  digitalRead(channel);
+  this->val = digitalRead(channel);
+  return this->val;
 }
 
 uint8 Relay::counter = 0;
@@ -72,8 +74,15 @@ Relay::Relay(){
   digitalWrite(channel, LOW);
 }
 
+Relay::Relay(uint8 pin){
+  channel = gpio_Addressing[pin];
+  pinMode(channel, OUTPUT);
+  digitalWrite(channel, LOW);
+}
+
 bool Relay::value(){
-  return digitalRead(channel);
+  this->val = digitalRead(channel);
+  return this->val;
 }
 
 void Relay::value(bool s){
@@ -96,22 +105,25 @@ Thermometer::Thermometer(){
 
 }
 
-void Thermometer::init(uint8 number, DeviceAddress deviceAddress){
+void Thermometer::init(uint8 number, DeviceAddress deviceAddress, String descr){
   numberOfTherm++;
   this->number = number;
+  this->descr = descr;
   for (uint8 i=0; i<8 ;i++){
     Therm_Address[i] = deviceAddress[i];
   }
+  sensors.setResolution(Therm_Address, TEMPERATURE_PRECISION);
 }
 
 float Thermometer::value() {
   sensors.requestTemperatures();
   float tempC = sensors.getTempC(Therm_Address);
   if (tempC == -127.00) {
-    return NAN;
+    this->val = NAN;
   } else {
-    return tempC;
+    this->val = tempC;
   }
+  return this->val;
 };
 
 
@@ -125,7 +137,7 @@ void GH::init(uint8 thermometers,
   k = new Relay[relays];
   t = new Thermometer[thermometers];
   for (uint8 i = 0; i<thermometers; i++){
-    t[i].init(i+1, thermAddresses[i]);
+    t[i].init(i+1, thermAddresses[i], String("Термометр #") + String(i+1));
   }
 }
 
@@ -181,9 +193,9 @@ void DiscretRegul::init(float *pv, float *sp, float deadband, Relay *relay){
 };
 
 void discretRegul(float pv, float sp, float deadband, Relay  outport ) {
-  if ((pv > sp + deadband) and outport.value()) {
+  if ((pv > sp + deadband) and outport.val) {
     outport.value(0);
-  } else if  ((pv < sp - deadband) and !outport.value()) {
+  } else if  ((pv < sp - deadband) and !outport.val) {
     outport.value(1);
   }
 }

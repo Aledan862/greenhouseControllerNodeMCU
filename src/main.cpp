@@ -4,13 +4,13 @@
 #include <PubSubClient.h>
 //#include <DallasTemperature.h>
 #include "GHcontrolClass.h"
-#include <timeClass.cpp>
+//#include <timeClass.cpp>
 
 #define CLIENT_ID "arduino"
 #define TOPIC_TEMP  "arduino/temp"
 #define TOPIC_OUT "arduino/relay"
 #define TOPIC_TEMP_SP "arduino/temp_sp"
-#define PUBLISH_PERIOD 30  //период отправки данных в секундах
+#define PUBLISH_PERIOD 5  //период отправки данных в секундах
 //#define ONE_WIRE_BUS 0 //номер цифрового канала для шины 1-wire
 //#define SP_TEMP_PIN A0 //номер пина для потенциометра регулирования уставки температуры
 //#define THERM_NUM 1  //количество термометров
@@ -106,9 +106,10 @@ PubSubClient client(espClient);
 //long lastMsg = 0;
 //char msg[50];
 
-AnalogChannel *analogObj = new AnalogChannel();
-Thermometer   *hotWater = new Thermometer();
+AnalogChannel tempSetPoint;
+Thermometer   water_thermometer;
 Relay         led[3];
+Relay         heater = Relay(0);
 //DiscretRegul  ten1;
 
 void setup_wifi() {
@@ -173,7 +174,7 @@ if (sysTime.sec % 5 == 0){
     }
   }
 }
-
+/*
 void sendData() {
   char msgBuffer[20];
   char topic[32];
@@ -185,7 +186,33 @@ void sendData() {
     sysTime.newSec = 0;
   }
 }
+*/
 
+void sendData(DigitalChannel signal) {
+  char topic[64];
+  (String(CLIENT_ID)+ String("/") + signal.descr).toCharArray(topic, 32);
+  client.publish(topic, signal.val?"1":"0");
+}
+
+void sendData(Relay signal) {
+  char topic[64];
+  (String(CLIENT_ID)+ String("/") + signal.descr).toCharArray(topic, 64);
+  client.publish(topic, signal.val?"1":"0");
+}
+
+void sendData(AnalogChannel signal){
+  char msgBuffer[20];
+  char topic[64];
+  (String(CLIENT_ID)+ String("/") + signal.descr).toCharArray(topic, 64);
+  client.publish(topic, dtostrf(signal.val, 6, 2, msgBuffer));
+}
+
+void sendData(Thermometer signal){
+  char msgBuffer[20];
+  char topic[64];
+  (String(CLIENT_ID)+ String("/") + signal.descr).toCharArray(topic, 64);
+  client.publish(topic, dtostrf(signal.val, 6, 2, msgBuffer));
+}
 
 //------------------------------------------------------------------------------
 
@@ -202,41 +229,59 @@ void setup() {
   sysTime.tick();
   //-----------сигналы ввода вывода--------------------------------------------
   //настройка потенциометра уставки температуры
-  analogObj->setSetting(10, 50);
-  analogObj->descr = "arduino/temp_sp";
+  tempSetPoint.setSetting(10, 50);
+  tempSetPoint.descr = String("temp_sp");
   //термометр горячей воды
   DeviceAddress hotWaterAddr = { 0x28, 0x0B, 0x5F, 0x77, 0x91, 0x14, 0x02, 0xDA  };
-  hotWater->init(1, hotWaterAddr);
+  water_thermometer.init(1, hotWaterAddr, "Теплоноситель");
   //симулятор реле
-  //led1->toggle()
-  pinMode(16, OUTPUT);
+  heater = Relay(0);
+  heater.descr = String("Heater");
+  //pinMode(16, OUTPUT);
 
   //дискретный регулятор
   //ten1.init(hotWater->value(), analogObj->value(), 2, led1);
 
 }
 
+void outToSerial (){
+  Serial.print(F("значение уставки "));
+  Serial.println(tempSetPoint.val);
+  Serial.print(F("значение термометра "));
+  Serial.println(water_thermometer.val);
+  Serial.print(F("значение heater "));
+  Serial.println(heater.val);
+}
+
+int _sp = 0;
 
 void loop() {
 sysTime.tick();
-Serial.print("значение analogObj ");
-Serial.println(analogObj->value());
-Serial.print("значение hotWater ");
-Serial.println(hotWater->value());
-//Serial.print("значение led ");
-Serial.println(led[1].value());
+//обновляем значения
+tempSetPoint.value();
+water_thermometer.value();
+heater.value();
+//
 
-discretRegul(hotWater->value(), analogObj->value(), 2.0 , led[1]);
-discretRegul(hotWater->value(), analogObj->value(), 2.0 , led[2]);
-digitalWrite(16, sysTime.sec % 2);
+discretRegul(water_thermometer.val, tempSetPoint.val, 1.0 , heater);
+
+if (!(_sp == int(tempSetPoint.val))){
+  outToSerial();
+  _sp = int(tempSetPoint.val);
+}
+
 
   if (!client.connected()) {
    reconnect();
   }
   client.loop();
   // it's time to send new data?
-  if ((sysTime.sec % PUBLISH_PERIOD) == 0) {
-    sendData();
+  if (((sysTime.sec % PUBLISH_PERIOD) == 0) && sysTime.newSec ) {
+    sendData(tempSetPoint);
+    sendData(water_thermometer);
+    sendData(heater);
+    sysTime.newSec = 0;
+    outToSerial();
   }
-delay(300);
+//delay(300);
 }
