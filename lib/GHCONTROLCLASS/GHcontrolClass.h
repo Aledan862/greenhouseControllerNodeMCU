@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <DallasTemperature.h>
-//#include <string>
+
 
 #define ONE_WIRE_BUS 4
 #define TEMPERATURE_PRECISION 11
