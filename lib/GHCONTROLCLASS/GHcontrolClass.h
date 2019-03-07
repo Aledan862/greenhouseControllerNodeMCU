@@ -19,7 +19,8 @@ class SysTime {
 public:
   uint8_t sec, min, hour, day;
   bool newSec = 0;
-  void tick();
+  void tick(); //меряет секунды
+  String hwclock();// выводит в строку текущее время
 private:
   uint8_t last_sec, last_min, last_hour;
 };
@@ -46,7 +47,7 @@ private:
 class DigitalChannel {
 public:
   DigitalChannel();
-//DigitalChannel(uint8 diChannel);
+  DigitalChannel(uint8 pin);
   bool value();
 
   bool val;

@@ -1,6 +1,4 @@
 #include <Arduino.h>
-#include <PubSubClient.h>
-#include "GHcontrolClass.h"
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include "GHcontrolClass.h"
@@ -11,6 +9,7 @@
 #define PUBLISH_PERIOD 5  //период отправки данных в секундах
 #define CLIENT_ID "arduino"
 
+SysTime sysTime;
 uint8_t Thermometers[2][8] = {
                                   {0x28, 0x85, 0xC7, 0x5B, 0x1E, 0x13, 0x01, 0x79},
                                   {0x28, 0x85, 0xC7, 0x5B, 0x1E, 0x13, 0x01, 0x79}}; //28 85 C7 5B 1E 13 1 79
@@ -19,19 +18,13 @@ AnalogChannel tempSetPoint;
 Thermometer   water_thermometer;
 Relay         led[3];
 Relay         heater = Relay(0);
-//DiscretRegul  ten1;
-
-
-SysTime sysTime;    //systemtimeobject
-AnalogChannel *analogObj = new AnalogChannel();
-Thermometer   *hotWater = new Thermometer();
-Relay         led[3];
+DigitalChannel extPower = DigitalChannel(1);
 //DiscretRegul  ten1;
 
 //----------------------Setup Ethernet minmaxSetting----------------------------
 // Update these with values suitable for your network.
-const char* ssid = "WHITE HOUSE";
-const char* password = "donaldtrumP";
+const char* ssid = "mi";
+const char* password = "123456781";
 const char* mqtt_server = "185.228.232.60";
 
 WiFiClient espClient;
@@ -102,7 +95,39 @@ if (sysTime.sec % 5 == 0){
   }
 }
 
+void sendData(DigitalChannel signal) {
+  char topic[64];
+  (String(CLIENT_ID)+ String("/") + signal.descr).toCharArray(topic, 32);
+  client.publish(topic, signal.val?"1":"0");
+}
 
+void sendData(Relay signal) {
+  char topic[64];
+  (String(CLIENT_ID)+ String("/") + signal.descr).toCharArray(topic, 64);
+  client.publish(topic, signal.val?"1":"0");
+}
+
+void sendData(AnalogChannel signal){
+  char msgBuffer[20];
+  char topic[64];
+  (String(CLIENT_ID)+ String("/") + signal.descr).toCharArray(topic, 64);
+  client.publish(topic, dtostrf(signal.val, 6, 2, msgBuffer));
+}
+
+void sendData(Thermometer signal){
+  char msgBuffer[20];
+  char topic[64];
+  (String(CLIENT_ID)+ String("/") + signal.descr).toCharArray(topic, 64);
+  client.publish(topic, dtostrf(signal.val, 6, 2, msgBuffer));
+}
+
+void sendTime(){
+  char msgBuffer[64];
+  char topic[64];
+  (String(CLIENT_ID)+ String("/") + "System time").toCharArray(topic, 64);
+  sysTime.hwclock().toCharArray(msgBuffer,64);
+  client.publish(topic, msgBuffer);
+}
 
 //------------------------------------------------------------------------------
 
@@ -113,11 +138,11 @@ void setup() {
   Serial.println("Стартуем");
   // setup ethernet communication using DHCP
   setup_wifi();
-/*
+
   // setup mqtt client
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
-  */
+
   //тикаем время
   sysTime.tick();
   //-----------сигналы ввода вывода--------------------------------------------
@@ -130,8 +155,8 @@ void setup() {
   //симулятор реле
   heater = Relay(0);
   heater.descr = String("Heater");
-  //pinMode(16, OUTPUT);
-
+  //сигнал на внешнее питание
+  extPower.descr = String("Power");
   //дискретный регулятор
   //ten1.init(hotWater->value(), analogObj->value(), 2, led1);
 
@@ -144,6 +169,10 @@ void outToSerial (){
   Serial.println(water_thermometer.val);
   Serial.print(F("значение heater "));
   Serial.println(heater.val);
+  Serial.print(F("значение питания "));
+  Serial.println(extPower.val);
+  Serial.println(digitalRead(5));
+
 }
 
 
@@ -154,6 +183,7 @@ sysTime.tick();
 tempSetPoint.value();
 water_thermometer.value();
 heater.value();
+extPower.value();
 //
 
 discretRegul(water_thermometer.val, tempSetPoint.val, 1.0 , heater);
@@ -171,9 +201,11 @@ if (!(_sp == int(tempSetPoint.val))){
   client.loop();
   // it's time to send new data?
   if (((sysTime.sec % PUBLISH_PERIOD) == 0) && sysTime.newSec ) {
+    sendTime();
     sendData(tempSetPoint);
     sendData(water_thermometer);
     sendData(heater);
+    sendData(extPower);
     sysTime.newSec = 0;
     outToSerial();
   }

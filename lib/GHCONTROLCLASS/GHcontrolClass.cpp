@@ -62,6 +62,12 @@ DigitalChannel::DigitalChannel(){
   }
 }
 
+DigitalChannel::DigitalChannel(uint8 pin){
+  channel = gpio_Addressing[pin];
+  pinMode(channel, INPUT);
+}
+
+
 bool DigitalChannel::value() {
 
   this->val = digitalRead(channel);
@@ -233,3 +239,7 @@ void discretRegul(float pv, float sp, float deadband, Relay  outport ) {
   last_min = min;
   last_hour = hour;
   };
+String SysTime::hwclock(){
+  String dots = String(":");
+  return String(day) + String(" ") + String(hour) + dots + String(min) + dots + String(sec);
+}
