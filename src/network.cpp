@@ -1,12 +1,12 @@
-#ifndef network_cpp
-#define network_cpp
+//#ifndef network_cpp
+//#define network_cpp
 
 #include <Arduino.h>
 
-#include <ESP8266WiFi.h>
-#include <PubSubClient.h>
+//#include <ESP8266WiFi.h>
+// #include <PubSubClient.h>
 #include "GHcontrolClass.h"
-#define CLIENT_ID "arduino"
+// #define CLIENT_ID "arduino"
 
 extern SysTime sysTime;
 
@@ -15,14 +15,14 @@ extern SysTime sysTime;
 const char* ssid = "WHITE HOUSE";
 const char* password = "donaldtrumP";
 const char* mqtt_server = "185.228.232.60";
-
+//
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-extern void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message arrived [");
+void callback(char* topic, byte* payload, unsigned int length) {
+  /*Serial.print("Message arrived [");
   Serial.print(topic);
-  Serial.print("] ");
+  Serial.print("] ");*/
   for (uint i = 0; i < length; i++) {
     Serial.print((char)payload[i]);
   }
@@ -39,7 +39,7 @@ extern void callback(char* topic, byte* payload, unsigned int length) {
 
   }
 
-extern void setup_wifi() {
+void setup_wifi() {
 
   delay(10);
   // We start by connecting to a WiFi network
@@ -67,7 +67,7 @@ extern void setup_wifi() {
 }
 
 
-extern void reconnect() {
+void reconnect() {
 if (sysTime.sec % 5 == 0){
     Serial.print("Attempting MQTT connection...");
     // Set a client ID
@@ -194,4 +194,4 @@ void reconnect() {
 }
 */
 
-#endif
+//#endif

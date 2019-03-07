@@ -1,13 +1,14 @@
 #include <Arduino.h>
-#include "network.cpp"
-#include "GHcontrolClass.h"
 
+#include "GHcontrolClass.h"
+#include <PubSubClient.h>
+#include "GHcontrolClass.h"
 
 #define TOPIC_TEMP  "arduino/temp"
 #define TOPIC_OUT "arduino/relay"
 #define TOPIC_TEMP_SP "arduino/temp_sp"
 #define PUBLISH_PERIOD 5  //период отправки данных в секундах
-
+#define CLIENT_ID "arduino"
 SysTime sysTime;
 
 
@@ -22,6 +23,14 @@ Relay         led[3];
 Relay         heater = Relay(0);
 //DiscretRegul  ten1;
 
+const char* ssid = "WHITE HOUSE";
+const char* password = "donaldtrumP";
+const char* mqtt_server = "185.228.232.60";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+#include "network.cpp"
 
 void setup() {
   // setup serial communication
