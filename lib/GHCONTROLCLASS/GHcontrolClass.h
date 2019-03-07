@@ -5,8 +5,10 @@
 #include <DallasTemperature.h>
 
 
+
 #define ONE_WIRE_BUS 4
 #define TEMPERATURE_PRECISION 11
+
 #define THERM_NUM 1  //количество термометров
 //#define AI_NUM 5     //макс количество аналогов
 //#define DI_NUM 4    //макс количество дискретных входов
@@ -29,7 +31,9 @@ public:
   void setSetting(long minValue, long maxValue);
   float value();
   static uint8 counter;
+
   float val;
+
   String descr;
 //void  set(float value);
 private:
@@ -44,11 +48,13 @@ public:
   DigitalChannel();
 //DigitalChannel(uint8 diChannel);
   bool value();
+
   bool val;
   String descr;
 private:
   static uint8 counter;
   uint8 channel;
+
 // void set(bool value);
 };
 
@@ -56,18 +62,24 @@ private:
 class Relay {
 public:
   Relay();
+
   Relay(uint8 pin);
   void init(uint8 number);
   static void read();
+
+
   bool value();
   void value(bool s);
   void toggle();
   uint8 number;
+
   bool val;
   String descr;
 private:
   static uint8 counter;
   uint8 channel;
+
+
 };
 
 
@@ -76,11 +88,13 @@ public:
   static uint8 numberOfTherm;
   Thermometer();
   //Thermometer(uint8 number, DeviceAddress deviceAddress);
+
   void init(uint8 number, DeviceAddress deviceAddress, String descr);
   float value();
   uint8 number;
   float val;
   String descr;
+
 private:
   DeviceAddress Therm_Address;
 };
