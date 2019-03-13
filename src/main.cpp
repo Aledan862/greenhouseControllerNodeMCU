@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
-#include <PubSubClient.h>
+//#include <ESP8266WiFi.h>
+//#include <PubSubClient.h>
 #include "GHcontrolClass.h"
 
 #define TOPIC_TEMP  "arduino/temp"
@@ -23,111 +23,15 @@ DigitalChannel extPower = DigitalChannel(1);
 
 //----------------------Setup Ethernet minmaxSetting----------------------------
 // Update these with values suitable for your network.
-const char* ssid = "mi";
-const char* password = "123456781";
-const char* mqtt_server = "185.228.232.60";
+char* ssid = "mi";
+char* password = "123456781";
+char* mqtt_server = "185.228.232.60";
 
-WiFiClient espClient;
-PubSubClient client(espClient);
+//WiFiClient espClient;
+//PubSubClient client(espClient);
 //long lastMsg = 0;
 //char msg[50];
-
-void setup_wifi() {
-
-  delay(10);
-  // We start by connecting to a WiFi network
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-
-  //randomSeed(micros());
-
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
-}
-
-void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("] ");
-  for (uint i = 0; i < length; i++) {
-    Serial.print((char)payload[i]);
-  }
-  Serial.println();
-
-  // Switch on the LED if an 1 was received as first character
-  if ((char)payload[0] == '1') {
-    //digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
-    // but actually the LED is on; this is because
-    // it is active low on the ESP-01)
-  } else {
-    //digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
-  }
-
-}
-
-void reconnect() {
-if (sysTime.sec % 5 == 0){
-    Serial.print("Attempting MQTT connection...");
-    // Set a client ID
-    String clientId = CLIENT_ID;
-    // Attempt to connect
-    if (client.connect(clientId.c_str())) {
-      Serial.println("connected");
-      // Once connected, publish an announcement...
-      client.publish("Status", "connected");
-      // ... and resubscribe
-      client.subscribe("inTopic");
-    } else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
-    }
-  }
-}
-
-void sendData(DigitalChannel signal) {
-  char topic[64];
-  (String(CLIENT_ID)+ String("/") + signal.descr).toCharArray(topic, 32);
-  client.publish(topic, signal.val?"1":"0");
-}
-
-void sendData(Relay signal) {
-  char topic[64];
-  (String(CLIENT_ID)+ String("/") + signal.descr).toCharArray(topic, 64);
-  client.publish(topic, signal.val?"1":"0");
-}
-
-void sendData(AnalogChannel signal){
-  char msgBuffer[20];
-  char topic[64];
-  (String(CLIENT_ID)+ String("/") + signal.descr).toCharArray(topic, 64);
-  client.publish(topic, dtostrf(signal.val, 6, 2, msgBuffer));
-}
-
-void sendData(Thermometer signal){
-  char msgBuffer[20];
-  char topic[64];
-  (String(CLIENT_ID)+ String("/") + signal.descr).toCharArray(topic, 64);
-  client.publish(topic, dtostrf(signal.val, 6, 2, msgBuffer));
-}
-
-void sendTime(){
-  char msgBuffer[64];
-  char topic[64];
-  (String(CLIENT_ID)+ String("/") + "System time").toCharArray(topic, 64);
-  sysTime.hwclock().toCharArray(msgBuffer,64);
-  client.publish(topic, msgBuffer);
-}
+Mqtt mqtt;
 
 //------------------------------------------------------------------------------
 
@@ -137,12 +41,8 @@ void setup() {
   Serial.begin(57600);
   Serial.println("Стартуем");
   // setup ethernet communication using DHCP
-  setup_wifi();
-
-  // setup mqtt client
-  client.setServer(mqtt_server, 1883);
-  client.setCallback(callback);
-
+  //setup_wifi();
+  mqtt.setup(ssid, password, mqtt_server);
   //тикаем время
   sysTime.tick();
   //-----------сигналы ввода вывода--------------------------------------------
@@ -195,17 +95,17 @@ if (!(_sp == int(tempSetPoint.val))){
 }
 
 
-  if (!client.connected()) {
-   reconnect();
+  if (!mqtt.client.connected()) {
+   mqtt.reconnect();
   }
-  client.loop();
+  mqtt.client.loop();
   // it's time to send new data?
   if (((sysTime.sec % PUBLISH_PERIOD) == 0) && sysTime.newSec ) {
-    sendTime();
-    sendData(tempSetPoint);
-    sendData(water_thermometer);
-    sendData(heater);
-    sendData(extPower);
+    mqtt.sendTime();
+    mqtt.sendData(tempSetPoint);
+    mqtt.sendData(water_thermometer);
+    mqtt.sendData(heater);
+    mqtt.sendData(extPower);
     sysTime.newSec = 0;
     outToSerial();
   }

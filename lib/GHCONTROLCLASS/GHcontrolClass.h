@@ -3,7 +3,8 @@
 
 #include <Arduino.h>
 #include <DallasTemperature.h>
-
+#include <ESP8266WiFi.h>
+#include <PubSubClient.h>
 
 
 #define ONE_WIRE_BUS 4
@@ -19,11 +20,12 @@ class SysTime {
 public:
   uint8_t sec, min, hour, day;
   bool newSec = 0;
-  void tick(); //меряет секунды
-  String hwclock();// выводит в строку текущее время
+  void tick();      //меряет секунды
+  String hwclock(); // выводит в строку текущее время
 private:
   uint8_t last_sec, last_min, last_hour;
 };
+
 
 class AnalogChannel {
 public:
@@ -136,6 +138,23 @@ public:
 };
 
 extern void discretRegul(float pv, float sp, float deadband, Relay outport );
+
+class Mqtt {
+public:
+  //Mqtt();
+  void setup(char* _ssid, char* _password, char* _mqtt_server);
+  void callback(char* topic, byte* payload, unsigned int length);
+  void reconnect();
+  void sendData(DigitalChannel signal);
+  void sendData(Relay signal);
+  void sendData(AnalogChannel signal);
+  void sendData(Thermometer signal);
+  void sendTime();
+  WiFiClient espClient;
+  PubSubClient client;
+};
+
+
 #endif
 
 /*
