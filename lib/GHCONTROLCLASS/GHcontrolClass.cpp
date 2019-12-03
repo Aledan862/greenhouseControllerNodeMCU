@@ -14,7 +14,7 @@ DallasTemperature sensors(&oneWire);
 //    { 0x28, 0x69, 0x34, 0x77, 0x91, 0x0B, 0x02, 0xE2  }
 //  };
 
-
+SysTime sysTime;
 
 uint8 AnalogChannel::counter = 0;
 

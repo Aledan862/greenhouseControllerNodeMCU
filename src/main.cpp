@@ -1,15 +1,17 @@
 #include <Arduino.h>
 //#include <ESP8266WiFi.h>
 //#include <PubSubClient.h>
-#include "GHcontrolClass.h"
-
+#include "webserver.h"
 #define TOPIC_TEMP  "arduino/temp"
 #define TOPIC_OUT "arduino/relay"
 #define TOPIC_TEMP_SP "arduino/temp_sp"
 #define PUBLISH_PERIOD 5  //период отправки данных в секундах
-#define CLIENT_ID "arduino"
 
-SysTime sysTime;
+
+#include "GHcontrolClass.h"
+
+extern SysTime sysTime; 
+
 uint8_t Thermometers[2][8] = {
                                   {0x28, 0x85, 0xC7, 0x5B, 0x1E, 0x13, 0x01, 0x79},
                                   {0x28, 0x85, 0xC7, 0x5B, 0x1E, 0x13, 0x01, 0x79}}; //28 85 C7 5B 1E 13 1 79
@@ -20,7 +22,7 @@ Relay         led[3];
 Relay         heater = Relay(0);
 DigitalChannel extPower = DigitalChannel(1);
 //DiscretRegul  ten1;
-
+#ifdef MQTT_ENABLE
 //----------------------Setup Ethernet minmaxSetting----------------------------
 // Update these with values suitable for your network.
 char* ssid = "mi";
@@ -34,6 +36,20 @@ char* mqtt_server = "185.228.232.60";
 Mqtt mqtt;
 
 //------------------------------------------------------------------------------
+#endif
+// Page construction
+PageElement Button(_PAGE_LED, {
+  {"STYLE", [](PageArgument& arg) { return String(_STYLE_BUTTON); }},
+  {"ARCH", getArch },
+  {"LEDIO", ledIO }
+});
+PageBuilder LEDPage("/", {Button});
+
+ESP8266WebServer Server;
+
+
+const char* SSID = "GreenHouse";  // Modify for your available WiFi AP
+const char* PSK  = "12345678";  // Modify for your available WiFi AP
 
 
 void setup() {
@@ -42,9 +58,26 @@ void setup() {
   Serial.println("Стартуем");
   // setup ethernet communication using DHCP
   //setup_wifi();
-  mqtt.setup(ssid, password, mqtt_server);
+  //mqtt.setup(ssid, password, mqtt_server);
   //тикаем время
-  sysTime.tick();
+  //sysTime.tick();
+
+  WiFi.disconnect();
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.begin(SSID, PSK);
+  do {
+    delay(500);
+    Serial.print("#");
+  } while (WiFi.waitForConnectResult() != WL_CONNECTED);
+  Serial.println("Connected to " + String(SSID));
+
+  LEDPage.insert(Server);
+  Server.begin();
+
+  Serial.print("Web server http://");
+  Serial.println(WiFi.localIP());
+
+
   //-----------сигналы ввода вывода--------------------------------------------
   //настройка потенциометра уставки температуры
   tempSetPoint.setSetting(10, 50);
@@ -94,7 +127,7 @@ if (!(_sp == int(tempSetPoint.val))){
   _sp = int(tempSetPoint.val);
 }
 
-
+#ifdef MQTT_ENABLE
   if (!mqtt.client.connected()) {
    mqtt.reconnect();
   }
@@ -110,4 +143,7 @@ if (!(_sp == int(tempSetPoint.val))){
     outToSerial();
   }
 //delay(300);
+#endif
+Server.handleClient();
+
 }

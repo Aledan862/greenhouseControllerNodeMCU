@@ -5,7 +5,7 @@
 #include <DallasTemperature.h>
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
-
+#define CLIENT_ID "arduino"
 
 #define ONE_WIRE_BUS 4
 #define TEMPERATURE_PRECISION 11
