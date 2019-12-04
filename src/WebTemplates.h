@@ -1,3 +1,157 @@
+// Web page structure is described as follows.
+// It contains two tokens as {{STYLE}} and {{LEDIO}} also 'led'
+//  parameter for GET method.
+static const char PROGMEM _PAGE_LED[] = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="5">
+  <title>{{ARCH}} Control</title>
+  <style type="text/css">
+  body {
+      -webkit-appearance:none;
+      background-color: #222;
+      }
+p {
+  font-family:'Arial',sans-serif;
+  font-weight:bold;
+  text-align:center;
+  color: #ffffff;
+}
+h1 {
+    text-align:center;
+    color: #ffffff;
+}
+h3 {
+  color: chartreuse;
+}
+
+.button {
+  display:block;
+  width:150px;
+  margin:10px auto;
+  padding:7px 13px;
+  text-align:center;
+  background:#668ad8;
+  font-size:20px;
+  color:#ffffff;
+  white-space:nowrap;
+  box-sizing:border-box;
+  -webkit-box-sizing:border-box;
+  -moz-box-sizing:border-box;
+}
+.button:active {
+  font-weight:bold;
+  vertical-align:top;
+  padding:8px 13px 6px;
+}
+.one a {text-decoration:none;}
+.img {text-align:center;}
+
+.container {
+  width: 400px;
+  height: 200px;
+  position: relative;
+  top: 100px;
+  left: 50%;
+  overflow: hidden;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.gauge-a {
+  z-index: 1;
+  position: absolute;
+  background-color: rgba(255,255,255,.2);
+  width: 400px;
+  height: 200px;
+  top: 0%;
+  border-radius: 250px 250px 0px 0px;
+}
+
+.gauge-b {
+  z-index: 4;
+  position: absolute;
+  background-color: #222;
+  width: 250px;
+  height: 125px;
+  top: 75px;
+  margin-left: 75px;
+  margin-right: auto;
+  border-radius: 250px 250px 0px 0px;
+}
+
+.gauge-c {
+  z-index: 2;
+  position: absolute;
+  background-color: #5664F9;
+  width: 400px;
+  height: 200px;
+  top: 200px;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 0px 0px 200px 200px;
+  transform-origin: center top;
+  transition: all 1.3s ease-in-out;
+  transform: rotate({{VAL}}deg)
+}
+
+.gauge-sp {
+  z-index: 3;
+  position: absolute;
+  background-color: #56f95f;
+  width: 200px;
+  height: 10px;
+  top: 195px;
+  margin-left: auto;
+  margin-right: auto;
+  transform-origin: right center;
+  transform: rotate({{SP}}deg)
+}
+
+.container:hover .gauge-data { color: rgba(255,255,255,1); }
+
+.gauge-data {
+  z-index: 4;
+  color: rgba(255,255,255,.2);
+  font-size: 1.5em;
+  line-height: 25px;
+  position: absolute;
+  width: 400px;
+  height: 200px;
+  top: 90px;
+  margin-left: auto;
+  margin-right: auto;
+  transition: all 1s ease-out;
+}
+
+  </style>
+</head>
+<body>
+  <h1>Температура котла</h1>
+<div class="container">
+    <div class="gauge-a"></div>
+    <div class="gauge-b"></div>
+    <div class="gauge-c"></div>
+    <div class="gauge-sp"></div>
+    <div class="gauge-data">
+        <h2 id="curent">{{VALUE}} &degC</h2>
+        <h3 id="set">Уст: {{SETPOINT}} &degC</h3>
+    </div>
+</div>        
+    
+<div class="one">
+    <p><a class="button" href="/?led=on">ON</a></p>
+    <p><a class="button" href="/?led=off">OFF</a></p>
+</div>
+<div class="img">
+    <img src="{{LEDIO}}"/>
+</div>
+</body>
+</html>
+)rawliteral";
+
 static const char _PNG_LED[] PROGMEM = {
 "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAACWCAYAAAA8AXHiAAAQHUlEQVR"
 "4Xu2dC1RUxxnHF3ygIKIIiqiIgLwUAQFBUPCFCT7BqPhIWz1tba1Nc1Jjm5PTJibntOZhz0nSNqdJ"
